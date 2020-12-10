@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<div class="main">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>つり日記</title>
+        <link rel="stylesheet" href="css/index.css">
+
+    </head>
+
+    <body>
+
+        <h1 class="h1">つり日記</h1>
+
+        <!-- <class="dl1"> -->
+        <div class="pointmap">
+            <div class="point">
+                <dt><label for="point">ポイント</label></dt>
+                <dd><input class="pointbox" type="text" id="point"></dd>
+            </div>
+            <div id="map"></div>
+        </div>
+
+        <div class="tyoushi">
+            <dt><label for="tyoushi">調子は？</label></dt>
+            <dd><input class="tyoushibox" type="text" id="tyoushi"></dd>
+        </div>
+
+        <div class="biggest">
+            <dt><label for="biggest">今日の一番大きいやつ</label></dt>
+            <dd><input class="biggestbox" type="text" id="biggest"></dd>
+        </div>
+        <!-- </dl> -->
+
+        <!-- 画像を複数選択してアップロードする -->
+        <input type="file" id="picture" multiple>
+
+        <!-- プレビュー画像を追加する -->
+
+        <div id="preview"></div>
+
+        <div class="buttonarea">
+            <div class="save">
+                <button id="send">保存</button>
+            </div>
+
+            <div class="delete">
+                <button id="deletebtn">取り消し</button>
+            </div>
+        </div>
+
+        <!-- データ出力場所 -->
+        <ul id="output"></ul>
+
+</div>
+
+
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script
+    src='https://www.bing.com/api/maps/mapcontrol?key=Ar38mBGtov-stLdMOwgvqK6HonM82zi0EHjD9Ygx5Wta7aJgcdpaJdUYzZ8r1dYC'
+    async defer></script>
+
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/8.1.2/firebase.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+         https://firebase.google.com/docs/web/setup#available-libraries -->
+
+<script>
+    // Your web app's Firebase configuration
+    var firebaseConfig = {
+        apiKey: "",
+        authDomain: "fisher-diary.firebaseapp.com",
+        projectId: "fisher-diary",
+        storageBucket: "fisher-diary.appspot.com",
+        messagingSenderId: "735210462494",
+        appId: "1:735210462494:web:54e2a6f19de560768abd0f"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+</script>
+
+<script>
+
+    // map表示用に使用する変数
+    let map;
+
+    // 現在地を取得するときのオプション
+    const option = {
+        enableHighAccuracy: true,
+        maximumAge: 20000,
+        timeout: 100000000
+    };
+
+
+    // 現在地の取得に成功したときの関数
+    function mapsInit(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        map = new Microsoft.Maps.Map('#map', {
+            center: {
+                latitude: lat, longitude: lng
+            },
+            zoom: 15,
+        });
+        pushPin(lat, lng, map);
+        console.log(lat);
+    }
+
+
+    // ピンの表示
+    function pushPin(lat, lng, map) {
+        const location = new Microsoft.Maps.Location(lat, lng)
+        const pin = new Microsoft.Maps.Pushpin(location, {
+            color: 'navy', // 色の設定
+            visible: true, // これ書かないとピンが見えない
+        });
+        map.entities.push(pin);
+    };
+
+    // 現在位置の取得に失敗したの実行する関数
+    function showError(error) {
+        let e = "";
+        if (error.code == 1) {
+            e = "位置情報が許可されてません";
+        }
+        if (error.code == 2) {
+            e = "現在位置を特定できません";
+        }
+        if (error.code == 3) {
+            e = "位置情報を取得する前にタイムアウトになりました";
+        }
+        alert("error：" + e);
+    }
+
+    // 位置情報を取りにいく処理
+    function getPosition() {
+        navigator.geolocation
+            .getCurrentPosition(mapsInit, showError, option);
+    }
+
+    window.onload = function () {
+        getPosition();
+    }
+
+
+
+    function previewFile(file) {
+        // プレビュー画像を追加する要素
+        const preview = document.getElementById('preview');
+
+        // FileReaderオブジェクトを作成
+        const reader = new FileReader();
+
+        // ファイルが読み込まれたときに実行する
+        reader.onload = function (e) {
+            const imageUrl = e.target.result; // 画像のURLはevent.target.resultで呼び出せる
+            const img = document.createElement("img"); // img要素を作成
+            img.src = imageUrl; // 画像のURLをimg要素にセット
+            preview.appendChild(img); // #previewの中に追加
+        }
+
+        // いざファイルを読み込む
+        reader.readAsDataURL(file);
+    }
+
+
+    // <input>でファイルが選択されたときの処理
+    const fileInput = document.getElementById('picture');
+    const handleFileSelect = () => {
+        const files = fileInput.files;
+        for (let i = 0; i < files.length; i++) {
+            previewFile(files[i]);
+        }
+    }
+    fileInput.addEventListener('change', handleFileSelect);
+
+    // 送信ボタンクリック時にデータを送信する処理
+    $('#send').on('click', function () {
+        db.add({
+            point: $('#point').val(),
+            map: $('#map').val(),
+            tyoushi: $('#tyoushi').val(),
+            biggest: $('#biggest').val(),
+            picture: $('#picture').val(),
+            time: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+
+        $('#point').val('');
+        $('#map').val('');
+        $('#tyoushi').val('');
+        $('#biggest').val('');
+        $('#picture').val('');
+    });
+
+    // データをリアルタイムに取得する処理
+    db.orderBy('time', 'desc').onSnapshot(function (querySnapshot) {
+        // まずはconsole.log()で出力してデータの形を確認！
+        console.log(querySnapshot);
+
+        const dataArray = [];
+        querySnapshot.docs.forEach(function (doc) {
+            const data = {
+                id: doc.id,
+                data: doc.data(),
+            }
+            dataArray.push(data);
+        });
+
+
+        const tagArray = []; // `dataArray`は前回出てきたオブジェクトの配列
+        dataArray.forEach(function (data) {
+            tagArray.push(`
+<li id=${data.id}>
+<p>ポイント：${data.data.point}</p>
+<p>${data.data.map}</p>
+<p>調子：${data.data.tyoushi}</p>
+<p>今日の一番大きいやつ：${data.data.biggest}</p>
+<p>${data.data.picture}</p>
+<p>${convertFromFirestoreTimestampToDatetime(data.data.time.seconds)}</p>
+</li>
+`)
+        })
+        $('#output').html(tagArray);
+    });
+
+
+
+</script>
+
+
+</body>

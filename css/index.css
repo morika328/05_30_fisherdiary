@@ -1,0 +1,44 @@
+body{
+  background: url(../img/back.jpg);
+}
+
+#map {
+      height: calc(100% - 102px);
+      width: 500px;
+      margin: 0;
+      padding: 0;
+      /* align-items: flex-start; */
+    }
+
+.main{
+  align-items: center;
+width: 1000px;
+background-color: white;
+margin-left: auto;
+margin-right: auto;
+}
+
+.pointmap{
+  display: flex;
+}
+
+.point{
+  align-items: flex-start;
+  justify-content: center;
+}
+
+
+
+
+
+#preview img {
+  width: 200px;
+  margin: 10px;
+  border: solid 1px silver;
+}
+
+.h1{
+  text-align: center;
+    margin-top: 30px;
+    padding-top: 5px;
+}
